@@ -1,5 +1,6 @@
 from piece import Piece
 from player import Player
+from board import Board, Point, Result
 
 class Game():
     """ 
@@ -7,21 +8,16 @@ class Game():
 
     Create an instance and call start() with two Player objects to play.
     """
-    BSIZE = 4 # Size of the board
-
-    def __init__(self):
-        self.board = [[None for cols in range(Game.BSIZE)] for rows in range(Game.BSIZE)]
-        self.pieces = Piece.GetPieces()
-
-    def get_free_spaces(self):
-        """ Return the empty spaces on the board as a list of tuples (x, y) """
-        spaces = []
-        for y, row in enumerate(self.board):
-            for x, tile in enumerate(row):
-                if tile == None:
-                    spaces.append((y, x))
-
-        return spaces
+    def __init__(self, bsize = 4, num_attr = 4):
+        self.board = Board(bsize, num_attr)
+        # Generate all num_attr digit binary numbers and convert into a list
+        self.pieces = []
+        for dec in range(2 ** num_attr):
+            piece = []
+            for attr in range(num_attr):
+                piece.append(1 if dec & 1 else -1)
+                dec = dec >> 1
+            self.pieces.append(piece)
 
     def start(self, player_a: Player, player_b: Player):
         """ 
@@ -35,14 +31,12 @@ class Game():
         other_player = player_b
 
         turn = 0
-        draw = False
+        result = Result(False, Board.DIR.H, -1)
 
-        while not self.has_won():
-            free_spaces = self.get_free_spaces()
-
+        while not result.win:
             # Check for a draw (no free spaces left)
+            free_spaces = self.board.free_spaces
             if (len(free_spaces) == 0):
-                draw = True
                 break
 
             # Show current turn
@@ -51,9 +45,9 @@ class Game():
 
             # Pick a piece
             print(active_player, "is picking a piece: ", end='')
-            piece = active_player.select_piece(self.pieces, self.board, free_spaces)
+            piece = active_player.select_piece(self.pieces, self.board)
             self.pieces.remove(piece)
-            print('{0:0>4b}'.format(piece.code))
+            print(piece)
 
             # Change active players
             temp = active_player
@@ -62,83 +56,39 @@ class Game():
 
             # Place a piece
             print(active_player, "is placing a piece: ", end='')
-            loc = active_player.place_piece(piece, self.board, free_spaces)
-            self.board[loc[0]][loc[1]] = piece
-            print(loc)
+            pos = active_player.place_piece(piece, self.board)
+            self.board.place(piece, pos)
+            print(pos)
 
             # GUI
             self.show_board()
 
+            # Check for win
+            result = self.board.has_won()
+
         # Show if the game had a winner
-        if draw:
-            print("DRAW: No moves available")
+        if result.win:
+            d_map = {
+                Board.DIR.H: 'row',
+                Board.DIR.V: 'column',
+                Board.DIR.D: 'diagonal'
+            }
+            print("{} won on {} {}!".format(active_player, d_map[result.dir], result.n))
         else:
-            print("\nWIN:", active_player)
-
-    def has_won(self):
-        """ 
-        Determine whether the board has a winning configuration
-
-        :returns: True if a row, column or diagonal has 4 pieces 
-        with a matching attribute. Otherwise returns False.
-        """
-        
-        """ 
-        Each piece is represented as a binary number w/ each digit representing an attr, so a bitwise 
-        mask is used to filter for each attribute.
-
-        For each attribute in each row/column/diagonal, count +1 or -1 for a 1 or 0 respectively.
-        If the total is +4 or -4, we have seen 4 of the same attribute in a row, which is a win state.
-        """
-        masks = [0b1000, 0b100, 0b10, 0b1]
-        for mask in masks:
-            # Check rows
-            for y in range(Game.BSIZE):
-                count = 0
-                for x in range(Game.BSIZE):
-                    if (self.board[y][x] != None):
-                        # Increase the count based on the attr is present
-                        count += 1 if self.board[y][x].code & mask else -1
-                # +/-4 means 4 of the same attribute in a row
-                if (abs(count) == Game.BSIZE):
-                    print("Row", y, "has a win")
-                    return True
-
-            # Check cols (same logic as rows)
-            for x in range(Game.BSIZE):
-                count = 0
-                for y in range(Game.BSIZE):
-                    if (self.board[y][x] != None):
-                        count += 1 if self.board[y][x].code & mask else -1
-                if (abs(count) == Game.BSIZE):
-                    print("Col", x, "has a win")
-                    return True
-
-            # Check diagonals (no need for nested loops)
-            count = 0
-            for d in range(Game.BSIZE):
-                if (self.board[d][d] != None):
-                    count += 1 if self.board[d][d].code & mask else -1
-            if (abs(count) == Game.BSIZE):
-                print("D+ has a win")
-                return True
-            
-            # Top-right to bottom-left diagonal
-            count = 0
-            for d in range(Game.BSIZE):
-                if (self.board[d][Game.BSIZE - d - 1] != None):
-                    count += 1 if self.board[d][Game.BSIZE - d - 1].code & mask else -1
-            if (abs(count) == Game.BSIZE):
-                print("D- has a win")
-                return True
-
-        # We didn't find a win states
-        return False
+            print("DRAW: No moves available")
 
     def show_board(self):
         """ Print the current state of the board """
-        for row in self.board:
+        for row in self.board.board:
             print("| ", end="")
             for tile in row:
-                print('{0:0>4b}'.format(tile.code) if tile != None else '    ', end=" | ")
+                s = ''
+                for attr in tile:
+                    if attr == 1:
+                        s += 'X'
+                    elif attr == -1:
+                        s += 'o'
+                    else:
+                        s += ' '
+                print(s, end=' | ')
             print("\n")
