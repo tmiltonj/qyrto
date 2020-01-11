@@ -1,4 +1,5 @@
 import random
+from copy import deepcopy
 
 class Player():
     """ 
@@ -32,3 +33,25 @@ class Player():
         :returns: a tuple (column, row), indicating the position to place the piece
         """
         return random.choice(board.free_spaces)
+
+class NovicePlayer(Player):
+    """
+    def select_piece(self, pieces, board):
+        pass
+    """
+
+    def place_piece(self, piece, board):
+        b = deepcopy(board)
+
+        free_spaces = board.free_spaces
+
+        winning_moves = []
+        for space in free_spaces:
+            b.place(piece, space)
+            res = b.has_won()
+            if res.win:
+                return space
+            else:
+                b.remove(space)
+        
+        return random.choice(free_spaces)
