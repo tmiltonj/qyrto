@@ -8,7 +8,8 @@ class Game():
 
     Create an instance and call start() with two Player objects to play.
     """
-    def __init__(self, bsize = 4, num_attr = 4):
+    def __init__(self, print_f = print, bsize = 4, num_attr = 4):
+        self.print_f = print_f
         self.board = Board(bsize, num_attr)
         # Generate all num_attr digit binary numbers and convert into a list
         self.pieces = []
@@ -41,13 +42,13 @@ class Game():
 
             # Show current turn
             turn += 1
-            print("TURN {} ({})".format(turn, active_player))
+            self.print_f("\nTURN {} ({})\n".format(turn, active_player))
 
             # Pick a piece
-            print(active_player, "is picking a piece: ", end='')
+            self.print_f("{} is picking a piece: ".format(active_player))
             piece = active_player.select_piece(self.pieces, self.board)
             self.pieces.remove(piece)
-            print(piece)
+            self.print_f('{}\n'.format(piece))
 
             # Change active players
             temp = active_player
@@ -55,10 +56,10 @@ class Game():
             other_player = temp
 
             # Place a piece
-            print(active_player, "is placing a piece: ", end='')
+            self.print_f("{} is placing a piece: ".format(active_player))
             pos = active_player.place_piece(piece, self.board)
             self.board.place(piece, pos)
-            print(pos)
+            self.print_f("{}\n".format(pos))
 
             # GUI
             self.show_board()
@@ -73,14 +74,16 @@ class Game():
                 Board.DIR.V: 'column',
                 Board.DIR.D: 'diagonal'
             }
-            print("{} won on {} {}!".format(active_player, d_map[result.dir], result.n))
+            self.print_f("{} won on {} {}!\n".format(active_player, d_map[result.dir], result.n))
+            return active_player
         else:
-            print("DRAW: No moves available")
+            self.print_f("DRAW: No moves available\n")
+            return None
 
     def show_board(self):
         """ Print the current state of the board """
         for row in self.board.board:
-            print("| ", end="")
+            self.print_f("| ")
             for tile in row:
                 s = ''
                 for attr in tile:
@@ -90,5 +93,5 @@ class Game():
                         s += 'o'
                     else:
                         s += ' '
-                print(s, end=' | ')
-            print("\n")
+                self.print_f('{} | '.format(s))
+            self.print_f("\n\n")
