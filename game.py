@@ -1,4 +1,3 @@
-from piece import Piece
 from player import Player
 from board import Board, Point, Result
 
