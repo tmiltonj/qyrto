@@ -5,7 +5,12 @@ Point = namedtuple('Point', ['x', 'y'])
 Result = namedtuple('Result', ['win', 'dir', 'n'])
 
 class Board:
+    """ 
+    Represents the game board, contains helper methods to add/remove pieces
+    and check if the board is in a winning state
+    """
     class DIR(Enum):
+        """ Directions used when reporting the location of a win """
         H = 0
         V = 1
         D = 2
@@ -45,17 +50,26 @@ class Board:
         return [list(map(lambda p: p[n], row)) for row in self.board]
 
     def has_won(self):
-        """ Determine if the board is in a winning state """
+        """ 
+        Determine if the board is in a winning state.
+        
+        :returns: a Result tuple indicating whether a win is found,
+                  it's direction and location (row/col/diagonal index)
+        """
+        # Check each attribute
         for attr in range(self.num_attr):
             b = self.get_attr(attr)
             d_sum_pos = 0
             d_sum_neg = 0
+            # Loop over each row/column
             for i in range(self.size):
+                # Since attributes are 1 or -1, if they are all the same, a win has been found
                 if abs(sum(b[i])) == self.size:
                     return Result(True, Board.DIR.H, i)
                 elif abs(sum([row[i] for row in b])) == self.size:
                     return Result(True, Board.DIR.V, i)
                 else:
+                    # Check diagonals
                     d_sum_pos += b[i][i]
                     d_sum_neg += b[self.size - i - 1][i]
 
@@ -68,6 +82,7 @@ class Board:
 
 
 if __name__ == "__main__":
+    """ Test code """
     def print_win(res: Result):
         if res.win:
             if res.dir == Board.DIR.H:
